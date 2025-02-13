@@ -488,16 +488,16 @@ app.post("/v1/chat/completions", OpenAIApiKeyAuth, (req, res) => {
 });
 
 // Helper function: Normalize messages
-async function openaiNormalizeMessages(messages, max_token) {
+async function openaiNormalizeMessages(messages, max_tokens) {
     let normalizedMessages = [];
     let currentSystemMessage = "";
     let messageCount = 0;
 
     // 在开头添加 max_token 信息
-    if (max_token) {
+    if (max_tokens) {
         normalizedMessages.push({
             role: 'system',
-            content: `-max_token:${max_token}`
+            content: `-警告!本次回复的最大token数为:${max_tokens}`
         });
     }
 
@@ -550,10 +550,10 @@ async function openaiNormalizeMessages(messages, max_token) {
             }
 
             // 每10条消息后插入 max_token 信息
-            if (max_token && messageCount % 10 === 0) {
+            if (max_tokens && messageCount % 10 === 0) {
                 normalizedMessages.push({
                     role: 'system',
-                    content: `-max_token:${max_token}`
+                    content: `-max_token:${max_tokens}`
                 });
             }
         }
@@ -565,10 +565,10 @@ async function openaiNormalizeMessages(messages, max_token) {
     }
 
     // 在结尾添加 max_token 信息（如果最后一组不满10条也添加）
-    if (max_token && messageCount % 10 !== 0) {
+    if (max_tokens && messageCount % 10 !== 0) {
         normalizedMessages.push({
             role: 'system',
-            content: `-max_token:${max_token}`
+            content: `-max_token:${max_tokens}`
         });
     }
 
