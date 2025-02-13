@@ -497,7 +497,7 @@ async function openaiNormalizeMessages(messages, max_tokens) {
     if (max_tokens) {
         normalizedMessages.push({
             role: 'system',
-            content: `-!!!!max_tokens:${max_tokens}`
+            content: `请注意字数限制,同时保证输出完整性,禁止出现乱码 -max_tokens:${max_tokens}`
         });
     }
 
