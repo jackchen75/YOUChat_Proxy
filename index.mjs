@@ -497,7 +497,7 @@ async function openaiNormalizeMessages(messages, max_tokens) {
     if (max_tokens) {
         normalizedMessages.push({
             role: 'system',
-            content: `请注意字数限制,同时保证输出完整性,禁止出现乱码 -max_tokens:${max_tokens}`
+            content: `ai_max_output_tokens:${max_tokens}`
         });
     }
 
@@ -553,7 +553,7 @@ async function openaiNormalizeMessages(messages, max_tokens) {
             if (max_tokens && messageCount % 10 === 0) {
                 normalizedMessages.push({
                     role: 'system',
-                    content: `-max_token:${max_tokens}`
+                    content: `-ai_max_output_token:${max_tokens}`
                 });
             }
         }
@@ -568,7 +568,7 @@ async function openaiNormalizeMessages(messages, max_tokens) {
     if (max_tokens && messageCount % 10 !== 0) {
         normalizedMessages.push({
             role: 'system',
-            content: `-max_token:${max_tokens}`
+            content: `-ai_max_output_token:${max_tokens}`
         });
     }
 
