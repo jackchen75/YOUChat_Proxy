@@ -145,6 +145,12 @@ app.get("/v1/models", OpenAIApiKeyAuth, (req, res) => {
 });
 // handle openai format model request
 app.post("/v1/chat/completions", OpenAIApiKeyAuth, (req, res) => {
+
+    // 新建一个计时器
+    const SPEED_TEST_TIMER = new Timer();
+    // 开始计时,精确到秒后小数点2位
+    SPEED_TEST_TIMER.start();
+
     // 用于存储请求体
     req.rawBody = "";
     req.setEncoding("utf8");
@@ -157,7 +163,16 @@ app.post("/v1/chat/completions", OpenAIApiKeyAuth, (req, res) => {
 
     // 数据接收完毕后处理请求
     req.on("end", async () => {
+
+        /*********************************/
+        //输出接受数据用时
         console.log("处理 OpenAI 格式的请求");
+        console.log("接受数据用时:", SPEED_TEST_TIMER.stop());
+        SPEED_TEST_TIMER.reset();
+
+        /*********************************/
+        //记录处理数据用时
+        SPEED_TEST_TIMER.start();
         res.setHeader("Content-Type", "text/event-stream;charset=utf-8");
         res.setHeader("Access-Control-Allow-Origin", "*");
 
@@ -170,31 +185,6 @@ app.post("/v1/chat/completions", OpenAIApiKeyAuth, (req, res) => {
         }
         var max_tokens = jsonBody.max_tokens;
         console.log("max_tokens:", max_tokens);
-
-        // 确保 jsonHistory 目录存在
-        const historyDir = path.join(process.cwd(), 'jsonHistory');
-        if (!fs.existsSync(historyDir)) {
-            fs.mkdirSync(historyDir, { recursive: true });
-        }
-
-        // 生成文件名（使用时间戳和随机数）
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const randomStr = Math.random().toString(36).substring(2, 8);
-        const filename = `request_${timestamp}_${randomStr}.json`;
-
-        try {
-            // 保存请求内容
-            fs.writeFileSync(
-                path.join(historyDir, filename),
-                JSON.stringify({
-                    timestamp: new Date().toISOString(),
-                    request: jsonBody
-                }, null, 2)
-            );
-            console.log(`Request saved to: ${filename}`);
-        } catch (error) {
-            console.error(`Error saving request history: ${error.message}`);
-        }
 
         // 规范化消息
         jsonBody.messages = await openaiNormalizeMessages(jsonBody.messages,max_tokens);
@@ -238,6 +228,9 @@ app.post("/v1/chat/completions", OpenAIApiKeyAuth, (req, res) => {
             releaseSession();
         });
 
+        /******************************/
+        //流式加载实现
+
         try {
             // 获取客户端 IP
             const clientIpAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
@@ -274,9 +267,11 @@ app.post("/v1/chat/completions", OpenAIApiKeyAuth, (req, res) => {
                 modeSwitched: modeSwitched // 传递模式切换标志
             }));
 
-            // 监听开始事件
+            // 监听开始事件(此处仅仅是在通知酒馆开始)
             completion.on("start", (id) => {
                 if (jsonBody.stream) {
+                    // 输出处理数据用时
+                    console.log("处理数据用时:", SPEED_TEST_TIMER.stop());
                     // 发送消息开始
                     res.write(createEvent(":", "queue heartbeat 114514"));
                     res.write(
