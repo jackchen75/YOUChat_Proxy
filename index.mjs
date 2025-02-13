@@ -497,7 +497,7 @@ async function openaiNormalizeMessages(messages, max_tokens) {
     if (max_tokens) {
         normalizedMessages.push({
             role: 'system',
-            content: `-警告!本次回复的最大token数为:${max_tokens}`
+            content: `-!!!!max_tokens:${max_tokens}`
         });
     }
 
