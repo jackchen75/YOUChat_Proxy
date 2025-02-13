@@ -11,6 +11,7 @@ import path from 'path';
 import geoip from 'geoip-lite';
 import RequestLogger from './requestLogger.mjs';
 import fs from 'fs';
+import {Timer} from "./utils/timer.mjs";
 
 const app = express();
 const port = process.env.PORT || 8080;
