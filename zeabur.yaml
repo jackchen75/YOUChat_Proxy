@@ -4,10 +4,19 @@ kind: Template
 metadata:
     name: youchat-proxy
 spec:
-    description: Exported from project 67aa84afb98e120b5b0ab8cc
+    icon: https://media-hosting.imagekit.io//431815c7a7a345f8/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE_20250217_013301.png?Expires=1834335216&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=lkgMiuyHl-dqlzx50EMX5abu0WWSHRJ4Z~lIjFi5H-F6DBzdbU8JP7LegTS~HFzYmYq3d~MouajcJZTsLJg~fTug1f0T6KHa~mTy7ZLLcXaIafTmk8koW68IQZmkP6~5BYaOE0CJJMJrHNj1w9Unm509EkexCb-inb20kd85C86Ih-z2kBUhbFjzIGElUv9whuePsdnEsdDkp8gDaE~yInGuhLjH2pH1vnySxKrjUn2ZVF3AkNnBNCD3Q4l1kM1E-U87ilqRVUP8dR89Jp-arldDgDu-l21Rxchuv9BFatvE8AmONK7bkt9~Mw2QosMwSOGdIheqG2EC4Xc9DwbwgA__
+    coverImage: https://media-hosting.imagekit.io//431815c7a7a345f8/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE_20250217_013301.png?Expires=1834335216&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=lkgMiuyHl-dqlzx50EMX5abu0WWSHRJ4Z~lIjFi5H-F6DBzdbU8JP7LegTS~HFzYmYq3d~MouajcJZTsLJg~fTug1f0T6KHa~mTy7ZLLcXaIafTmk8koW68IQZmkP6~5BYaOE0CJJMJrHNj1w9Unm509EkexCb-inb20kd85C86Ih-z2kBUhbFjzIGElUv9whuePsdnEsdDkp8gDaE~yInGuhLjH2pH1vnySxKrjUn2ZVF3AkNnBNCD3Q4l1kM1E-U87ilqRVUP8dR89Jp-arldDgDu-l21Rxchuv9BFatvE8AmONK7bkt9~Mw2QosMwSOGdIheqG2EC4Xc9DwbwgA__
+    description: A proxy for YOU Chat.
+    readme: |-
+        # youchat-proxy
+        A proxy for YOU Chat.  
+        源码地址: https://github.com/yunzaixi-dev/YOUCHAT_Proxy  
+        使用教程: https://leinao.zaixi.dev
+
     services:
         - name: youchat-proxy
-          icon: https://service-icons.zeabur.com/git/docker/default.svg
+          icon: https://media-hosting.imagekit.io//431815c7a7a345f8/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE_20250217_013301.png?Expires=1834335216&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=lkgMiuyHl-dqlzx50EMX5abu0WWSHRJ4Z~lIjFi5H-F6DBzdbU8JP7LegTS~HFzYmYq3d~MouajcJZTsLJg~fTug1f0T6KHa~mTy7ZLLcXaIafTmk8koW68IQZmkP6~5BYaOE0CJJMJrHNj1w9Unm509EkexCb-inb20kd85C86Ih-z2kBUhbFjzIGElUv9whuePsdnEsdDkp8gDaE~yInGuhLjH2pH1vnySxKrjUn2ZVF3AkNnBNCD3Q4l1kM1E-U87ilqRVUP8dR89Jp-arldDgDu-l21Rxchuv9BFatvE8AmONK7bkt9~Mw2QosMwSOGdIheqG2EC4Xc9DwbwgA__
+          coverImage: https://media-hosting.imagekit.io//431815c7a7a345f8/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE_20250217_013301.png?Expires=1834335216&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=lkgMiuyHl-dqlzx50EMX5abu0WWSHRJ4Z~lIjFi5H-F6DBzdbU8JP7LegTS~HFzYmYq3d~MouajcJZTsLJg~fTug1f0T6KHa~mTy7ZLLcXaIafTmk8koW68IQZmkP6~5BYaOE0CJJMJrHNj1w9Unm509EkexCb-inb20kd85C86Ih-z2kBUhbFjzIGElUv9whuePsdnEsdDkp8gDaE~yInGuhLjH2pH1vnySxKrjUn2ZVF3AkNnBNCD3Q4l1kM1E-U87ilqRVUP8dR89Jp-arldDgDu-l21Rxchuv9BFatvE8AmONK7bkt9~Mw2QosMwSOGdIheqG2EC4Xc9DwbwgA__
           template: PREBUILT_V2
           spec:
             source:
@@ -19,16 +28,133 @@ spec:
                 - id: web
                   port: 8080
                   type: HTTP
+            instructions:
+                - type: TEXT
+                  title: 代理类型
+                  content: ${ACTIVE_PROVIDER}
+                - type: TEXT
+                  title: 是否使用手动登录模式
+                  content: ${USE_MANUAL_LOGIN}
+                - type: TEXT
+                  title: 是否隐藏浏览器
+                  content: ${HEADLESS_BROWSER}
+                - type: TEXT
+                  title: 浏览器实例数量
+                  content: ${BROWSER_INSTANCE_COUNT}
+                - type: TEXT
+                  title: 会话自动释放时间（秒）
+                  content: ${SESSION_LOCK_TIMEOUT}
+                - type: TEXT
+                  title: 是否开启并发限制
+                  content: ${ENABLE_DETECTION}
+                - type: TEXT
+                  title: 是否开启并发上限控制
+                  content: ${ENABLE_REQUEST_LIMIT}
+                - type: TEXT
+                  title: 是否允许非 PRO 访问
+                  content: ${ALLOW_NON_PRO}
+                - type: TEXT
+                  title: 自定义截断符号
+                  content: ${CUSTOM_END_MARKER}
+                - type: TEXT
+                  title: 是否开启延迟逻辑
+                  content: ${ENABLE_DELAY_LOGIC}
+                - type: TEXT
+                  title: 是否使用自定义模式
+                  content: ${USE_CUSTOM_MODE}
+                - type: TEXT
+                  title: 是否开启模式转换
+                  content: ${ENABLE_MODE_ROTATION}
+                - type: TEXT
+                  title: 是否启用浏览器隐身模式
+                  content: ${INCOGNITO_MODE}
+                - type: TEXT
+                  title: 上传文件格式
+                  content: ${UPLOAD_FORMAT}
+                - type: TEXT
+                  title: 是否在开头插入乱码
+                  content: ${ENABLE_GARBLED_START}
+                - type: TEXT
+                  title: 开头插入乱码最小长度
+                  content: ${GARBLED_START_MIN_LENGTH}
+                - type: TEXT
+                  title: 开头插入乱码最大长度
+                  content: ${GARBLED_START_MAX_LENGTH}
+                - type: TEXT
+                  title: 是否在结尾插入乱码
+                  content: ${ENABLE_GARBLED_END}
+                - type: TEXT
+                  title: 结尾插入乱码长度
+                  content: ${GARBLED_END_LENGTH}
+                - type: TEXT
+                  title: 是否开启结尾插入乱码
+                  content: ${ENABLE_GARBLED_END}
+                - type: TEXT
+                  title: 端口号
+                  content: ${WEB_PORT}
             env:
+                # 代理类型
+                ACTIVE_PROVIDER:
+                    default: you
+                # 是否使用手动登录
+                USE_MANUAL_LOGIN:
+                    default: "false"
+                    readonly: true
+                # 是否隐藏浏览器
+                HEADLESS_BROWSER:
+                    default: "true"
+                # 浏览器数量
+                BROWSER_INSTANCE_COUNT:
+                    default: "1"
+                # 会话自动释放时间（秒）
+                SESSION_LOCK_TIMEOUT:
+                    default: "180"
+                # 是否开启并发限制
+                ENABLE_DETECTION:
+                    default: "true"
+                # 并发上限
+                ENABLE_REQUEST_LIMIT:
+                    default: "false"
+                # 是否允许非 PRO 访问
+                ALLOW_NON_PRO:
+                    default: "false"
+                # 自定义截断符号
+                CUSTOM_END_MARKER:
+                    default: "<CHAR_turn>"
+                # 是否开启延迟逻辑
+                ENABLE_DELAY_LOGIC:
+                    default: "false"
+                # 使用自定义模式
+                USE_CUSTOM_MODE:
+                    default: "true"
+                # 是否开启模式转换
                 ENABLE_MODE_ROTATION:
                     default: "false"
-                    expose: false
+                # 启用浏览器隐身模式
+                INCOGNITO_MODE:
+                    default: "false"
+                # 上传文件格式
+                UPLOAD_FORMAT:
+                    default: "txt"
+                # 是否在开头插入乱码
+                ENABLE_GARBLED_START:
+                    default: "false"
+                # 设置开头插入乱码最小长度
+                GARBLED_START_MIN_LENGTH:
+                    default: "1000"
+                # 设置开头插入乱码最大长度
+                GARBLED_START_MAX_LENGTH:
+                    default: "5000"
+                # 设置结尾插入乱码固定长度
+                GARBLED_END_LENGTH:
+                    default: "500"
+                # 是否开启结尾插入乱码
+                ENABLE_GARBLED_END:
+                    default: "false"
+                # 端口
                 PORT:
                     default: ${WEB_PORT}
-                    expose: false
-                USE_CUSTOM_MODE:
-                    default: "false"
-                    expose: false
+
             configs:
                 - path: /app/config.mjs
                   template: |-
@@ -36,7 +162,14 @@ spec:
                         "sessions": [
                             {
                                 "cookie": `...`,
+                            },
+                            {
+                                "cookie": `...`,
+                            },
+                            {
+                                "cookie": `...`,
                             }
+                            //请自行添加更多cookie
                         ]
                     }
                   permission: 493

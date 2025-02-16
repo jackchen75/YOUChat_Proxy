@@ -1,12 +1,10 @@
-# Miaomiaomiao
+![7379b3165cb849f1dd1274df6dda4422.jpg](<https://media-hosting.imagekit.io//5a7ed96412fe4642/7379b3165cb849f1dd1274df6dda4422.jpg?Expires=1834328285&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=tTPZSODyAAMDu4YcbRJcRtDFPsB-GnmMyPaQL~eyf8~hiJp~pExmWJADD6yEZdbS0meqGwIq1kEsg~FpXJWZtf0vRAdbtjlMnDWlXOoWrsiyyF1G26QYNBdd~AS4c9EK-b1AlbDqf1yg0cuIpsjBowahMnnO8nOOkK5u2blZWGMU8TsWvUFVwL7kHXP-Wb7-qbMT4imCM7MQNlQmhfQAdXtwxoYlRwLk0R7J-kZvj~DYH7tC4P~AbnXbwizHRmR-ftl1p6OPoAjW3Y~QpyFJmr8JCjmA6KSKc0Oq2CBKXkksRg4pMGp2fPvfZsUO90T6WBkAGYPwpsDweL3jfL77Kg__>)
+
+# YOUCHAT_Proxy(原miaomiaomiao)
 
 A proxy for YOU Chat.
 
-把 YOU.Com 转换为通用代理。
-
-如果您觉得本项目对您有帮助，请考虑[请我喝杯蜜雪冰城](https://github.com/sponsors/Archeb?frequency=one-time)
-
-If you find this project useful, please consider [buying me a cup of coffee](https://github.com/sponsors/Archeb?frequency=one-time);
+将you.com订阅转换为通用api.
 
 [**Usage 使用方法**](usage.md)
 
@@ -17,7 +15,3 @@ If you find this project useful, please consider [buying me a cup of coffee](htt
 ASK THE ASSISTANT TO HELP YOU DEPLOY ↓
 
 有部署问题请问部署助手: https://www.coze.com/store/bot/7383564439096131592?bot_id=true
-
-您的电脑上必须安装有 Google Chrome 或者 Edge 浏览器才能够使用当前分支。旧版已不再维护。
-
-Google Chrome must be installed on your system in order to use this proxy. Previous versions are no longer maintained.

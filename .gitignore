@@ -7,3 +7,6 @@ test.mjs
 config.js
 config.mjs
 browser_profiles
+*.log
+*.json
+.env
