@@ -4,7 +4,7 @@
 
 A proxy for YOU Chat.
 
-将you.com订阅转换为通用api.
+将you.com订阅转换为通用api.本项目持续改进中,欢迎提交代码成为贡献者之一
 
 [**Usage 使用方法**](usage.md)
 
