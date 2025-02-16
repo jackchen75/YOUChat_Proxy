@@ -17,6 +17,8 @@ const app = express();
 const port = process.env.PORT || 8080;
 const validApiKey = process.env.PASSWORD;
 const availableModels = [
+    "openai_o3_mini_high",
+    "openai_o3_mini_medium",
     "openai_o1",
     "openai_o1_preview",
     "gpt_4o",
