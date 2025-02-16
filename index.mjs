@@ -495,14 +495,6 @@ async function openaiNormalizeMessages(messages, max_tokens) {
     let currentSystemMessage = "";
     let messageCount = 0;
 
-    // 在开头添加 max_token 信息
-    if (max_tokens) {
-        normalizedMessages.push({
-            role: 'system',
-            content: `ai_max_output_tokens:${max_tokens}`
-        });
-    }
-
     for (let message of messages) {
         if (message.role === 'system') {
             if (currentSystemMessage) {
@@ -549,14 +541,6 @@ async function openaiNormalizeMessages(messages, max_tokens) {
                 console.warn('未知的消息内容格式:', message.content);
                 normalizedMessages.push(message);
                 messageCount++;
-            }
-
-            // 每10条消息后插入 max_token 信息
-            if (max_tokens && messageCount % 10 === 0) {
-                normalizedMessages.push({
-                    role: 'system',
-                    content: `-ai_max_output_token:${max_tokens}`
-                });
             }
         }
     }

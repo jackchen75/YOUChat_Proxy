@@ -29,6 +29,9 @@ spec:
                   port: 8080
                   type: HTTP
             instructions:
+                - type: PASSWORD
+                  title: API密钥
+                  content: ${PASSWORD}
                 - type: TEXT
                   title: 代理类型
                   content: ${ACTIVE_PROVIDER}
