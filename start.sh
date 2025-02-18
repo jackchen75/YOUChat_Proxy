@@ -34,7 +34,7 @@ export ALLOW_NON_PRO=false
 export CUSTOM_END_MARKER="<CHAR_turn>"
 
 # 设置是否启用延迟发送请求，如果设置false卡发送请求尝试打开它
-export ENABLE_DELAY_LOGIC=false
+export ENABLE_DELAY_LOGIC=true
 
 # 设置是否启用隧道访问
 export ENABLE_TUNNEL=false

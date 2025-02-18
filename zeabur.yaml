@@ -108,13 +108,13 @@ spec:
                     default: "true"
                 # 浏览器数量
                 BROWSER_INSTANCE_COUNT:
-                    default: "1"
+                    default: "2"
                 # 会话自动释放时间（秒）
                 SESSION_LOCK_TIMEOUT:
                     default: "180"
                 # 是否开启并发限制
                 ENABLE_DETECTION:
-                    default: "true"
+                    default: "false"
                 # 并发上限
                 ENABLE_REQUEST_LIMIT:
                     default: "false"
@@ -126,7 +126,7 @@ spec:
                     default: "<CHAR_turn>"
                 # 是否开启延迟逻辑
                 ENABLE_DELAY_LOGIC:
-                    default: "false"
+                    default: "true"
                 # 使用自定义模式
                 USE_CUSTOM_MODE:
                     default: "true"
