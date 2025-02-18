@@ -21,6 +21,9 @@ export SESSION_LOCK_TIMEOUT=180
 # 设置是否启用并发限制
 export ENABLE_DETECTION=true
 
+# 设置是否启用自动Cookie更新 (USE_MANUAL_LOGIN=false时有效)
+export ENABLE_AUTO_COOKIE_UPDATE=false
+
 # 是否跳过账户验证 (启用时，`ALLOW_NON_PRO`设置无效，可用于账号量多情况)
 export SKIP_ACCOUNT_VALIDATION=false
 

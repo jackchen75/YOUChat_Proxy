@@ -24,99 +24,18 @@ export function formatMessages(messages, proxyModel, randomFileName) {
         messages = xmlPlotAllMessages(messages, roleFeatures);
     }
 
-    const hasAIRound0 = messages.some(message => message.content.includes('<!-- AI Round 0 begins. -->'));
-
-    let formattedMessages = messages.slice();
-
-    // 如果没有找到 AI Round 0 标记，直接返回处理后的消息数组
-    if (!hasAIRound0) {
-        return formattedMessages;
-    }
-
-    let userRoundCounter = 0;
-    let assistantRoundCounter = 0;
-    let descriptionPointCounter = 0;
-    let isFirstUserFound = false;
-    let lastAssistantRound = 0;
-
-    // 查找初始回合数
-    let initialRound = 0;
-    for (let i = 0; i < formattedMessages.length; i++) {
-        if (formattedMessages[i].role === roleFeatures.userRole) {
-            const nextMessage = formattedMessages[i + 1];
-            if (nextMessage && nextMessage.role === roleFeatures.assistantRole) {
-                const match = nextMessage.content.match(/<!-- AI Round (\d+) begins\. -->/);
-                if (match) {
-                    initialRound = parseInt(match[1]);
-                    userRoundCounter = initialRound - 1;
-                    assistantRoundCounter = initialRound;
-                    lastAssistantRound = initialRound;
-                    descriptionPointCounter = 1;
-                    break;
-                }
-            }
+    messages = messages.map((message) => {
+        let newMessage = { ...message };
+        if (typeof newMessage.content === 'string') {
+            // 1) 移除 </FORMAT LINE BREAK/> 标识
+            let tempContent = newMessage.content.replace(/<\/FORMAT\s+LINE\s+BREAK\/>/g, '');
+            tempContent = tempContent.replace(/\n{3,}/g, '\n\n');
+            newMessage.content = tempContent;
         }
-    }
+        return newMessage;
+    });
 
-    // 找到最后一个有效的 user 消息索引
-    let lastUserIndex = -1;
-    let contextEndIndex = formattedMessages.length;
-    for (let i = formattedMessages.length - 1; i >= 0; i--) {
-        if (formattedMessages[i].content.includes('</context> ---')) {
-            contextEndIndex = i;
-        }
-        if (formattedMessages[i].role === roleFeatures.userRole && lastUserIndex === -1) {
-            lastUserIndex = i;
-        }
-        if (lastUserIndex !== -1 && contextEndIndex !== formattedMessages.length) {
-            break;
-        }
-    }
-
-    let processedMessages = [];
-    for (let i = 0; i < formattedMessages.length; i++) {
-        const message = formattedMessages[i];
-
-        if (message.content.includes('<!-- AI Round 0 begins. -->')) {
-            processedMessages.push({
-                role: message.role,
-                content: message.content.replace('<!-- AI Round 0 begins. -->', '<建立记忆区>\n<!-- AI Round 0 begins. -->')
-            });
-            continue;
-        }
-
-        if (message.role === roleFeatures.userRole && i <= lastUserIndex) {
-            if (isFirstUserFound) {
-                userRoundCounter = lastAssistantRound + 1;
-                descriptionPointCounter++;
-            } else {
-                isFirstUserFound = true;
-            }
-
-            let roundInfo = '';
-            if (i === lastUserIndex) {
-                roundInfo = `最新${roleFeatures.userRole}:(${userRoundCounter})回合|${roleFeatures.assistantRole}:(${userRoundCounter + 1})回合开始，参考 <Human_inputs>，关联所有记忆重构语境时空关系的碎片:\n`;
-            } else {
-                const nextAssistantRound = userRoundCounter + 1;
-                roundInfo = `{{ 第 ${roleFeatures.userRole} = 回合${userRoundCounter}|${roleFeatures.assistantRole} = 回合${nextAssistantRound} 开始建立记忆区: [${descriptionPointCounter}]\n`;
-            }
-            message.content = roundInfo + message.content;
-        } else if (message.role === roleFeatures.assistantRole && i < lastUserIndex) {
-            const match = message.content.match(/<!-- AI Round (\d+) begins\. -->/);
-            if (match) {
-                assistantRoundCounter = parseInt(match[1]);
-                lastAssistantRound = assistantRoundCounter;
-            }
-
-            if (message.content.includes('<CHAR_turn>')) {
-                message.content += `\n}}\n<-- 记忆区 [${descriptionPointCounter}] 结束 -->`;
-            }
-        }
-
-        processedMessages.push(message);
-    }
-
-    return processedMessages;
+    return messages;
 }
 
 /**
@@ -129,18 +48,13 @@ function clearFirstMessageRole(messages) {
         return messages;
     }
     const processedMessages = messages.map(msg => ({...msg}));
-    
+
     processedMessages[0] = {
         ...processedMessages[0],
         role: ''
     };
 
     return processedMessages;
-}
-
-// 转义特殊字符
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // 获取角色特征
@@ -265,141 +179,88 @@ function replaceRolesInContent(messages, roleFeatures) {
 }
 
 /**
- * xmlPlotAllMessages(messages, roleFeatures, options)
- *
  * 在 CLEWD 阶段，对一组 messages 进行二次处理：
- *   默认将所有消息的 role 设置为空字符串（可以视为“去掉角色”）。
- *   若 message.content 中含有 <|KEEP_ROLE|> 标记，则保留原先的 role，不置空。
- *   通过 options.skipSystem = true/false，决定是否跳过 system 段落处理。
- *   调用 xmlPlot(...) 时传入 apiKey / skipSystem 等参数，以进一步根据老版逻辑进行区分。
+ *   若消息 content 不含 <|KEEP_ROLE|>，则将 role 置空。
+ *   然后调用 xmlHyperProcess 做多轮正则、合并、<@N>插入、收尾清理。
  *
- * @param {Array} messages - [{ role: 'user'/..., content: '...' }, ...]
+ * @param {Array} messages  - [{ role: 'user', content: '...' }, ...]
  * @param {object} roleFeatures - { systemRole, userRole, assistantRole, prefix }
- * @return {Array} 新的 messages（content 已经过多轮正则处理）
- * -----------------------------------------------------------------------------------
+ * @return {Array} 新的 messages
  */
 export function xmlPlotAllMessages(messages, roleFeatures) {
-    return messages.map(msg => {
+    return messages.map((msg) => {
         if (!msg.content.includes('<|KEEP_ROLE|>')) {
             msg = {
                 ...msg,
                 role: ''  // 置空
             };
         }
-        const newContent = xmlPlot(msg.content, roleFeatures);
 
-        return {
-            ...msg,
-            content: newContent
-        };
+        // 核心调用
+        const processed = xmlHyperProcess(msg.content, roleFeatures);
+
+        return { ...msg, content: processed };
     });
 }
 
 /**
- * 对单条文本 content 进行多轮正则及合并处理
- * @param {string} content - 消息体文本
- * @param {object} roleFeatures - { systemRole, userRole, assistantRole, prefix }
+ *   多轮 <regex order=1 / 2 / 3>
+ *   MergeDisable 判断 + System => user 替换
+ *   段落合并 + <@N>插入
+ *   最终收尾 cleanup
+ *
+ * @param {string} originalContent
+ * @param {object} roleFeatures
+ * @returns {string} 处理后的文本
  */
-function xmlPlot(content, roleFeatures) {
-    let regexLog = '';
-    // 第一次正则替换
-    content = xmlPlot_regex(content, 1, regexLog);
+function xmlHyperProcess(originalContent, roleFeatures) {
+    let content = originalContent;
+    let regexLogs = '';
 
-    // 第一次角色合并
-    const mergeTag = {
-        all: !content.includes('<|Merge Disable|>'),
-        system: !content.includes('<|Merge System Disable|>'),
-        human: !content.includes('<|Merge Human Disable|>'),
-        assistant: !content.includes('<|Merge Assistant Disable|>')
+    // 第1轮正则 (order=1)
+    [content, regexLogs] = xmlHyperRegex(content, 1, regexLogs);
+
+    // 检测 MergeDisable 标记
+    const mergeDisable = {
+        all: content.includes('<|Merge Disable|>'),
+        system: content.includes('<|Merge System Disable|>'),
+        user: content.includes('<|Merge Human Disable|>'),
+        assistant: content.includes('<|Merge Assistant Disable|>')
     };
-    content = xmlPlot_merge(content, mergeTag, roleFeatures);
 
-    // 处理内嵌 <@N> ... </@N> 插入
-    const escapeRegExp = (str) => str.replace(/[\b.*+?^${}()|[\]\\]/g, '\\$&');
-    const humanLabelRaw = `${roleFeatures.userRole}:`;
-    const assistantLabelRaw = `${roleFeatures.assistantRole}:`;
-    const humanLabel = escapeRegExp(humanLabelRaw);
-    const assistantLabel = escapeRegExp(assistantLabelRaw);
+    // 把“system:”在部分情况下替换为“user:”
+    content = preSystemToUserFallback(content, roleFeatures, mergeDisable);
 
-    // 根据段落分隔符拆分
-    let splitContent = content.split(new RegExp(`\\n\\n(?=${humanLabel}|${assistantLabel})`, 'g'));
-    let match;
-    while ((match = /<@(\d+)>(.*?)<\/@\1>/gs.exec(content)) !== null) {
-        let insertionIndex = splitContent.length - parseInt(match[1], 10) - 1;
-        if (insertionIndex >= 0) {
-            splitContent[insertionIndex] += '\n\n' + match[2];
-        }
-        content = content.replace(match[0], '');
-    }
-    content = splitContent.join('\n\n').replace(/<@(\d+)>.*?<\/@\1>/gs, '');
+    // 开始合并 (首次)
+    content = xmlHyperMerge(content, roleFeatures, mergeDisable);
 
-    // 第二次正则替换
-    content = xmlPlot_regex(content, 2, regexLog);
+    // 处理 <@N> 插入
+    content = handleSubInsertion(content);
 
-    // 第二次角色合并
-    content = xmlPlot_merge(content, mergeTag, roleFeatures);
+    // 第2轮正则 (order=2)
+    [content, regexLogs] = xmlHyperRegex(content, 2, regexLogs);
 
-    // Plain Prompt 处理
-    const humanLabelPattern = new RegExp(`\\n\\n${humanLabel}`, 'g');
-    let segcontentHuman = content.split(humanLabelPattern);
-    let segcontentlastIndex = segcontentHuman.length - 1;
-    if (
-        segcontentlastIndex >= 2 &&
-        segcontentHuman[segcontentlastIndex].includes('<|Plain Prompt Enable|>') &&
-        !content.includes(`\n\nPlainPrompt:`)
-    ) {
-        content = segcontentHuman
-            .slice(0, segcontentlastIndex)
-            .join(`\n\n${humanLabelRaw}`) +
-            `\n\nPlainPrompt:` +
-            segcontentHuman
-                .slice(segcontentlastIndex)
-                .join(`\n\n${humanLabelRaw}`)
-                .replace(new RegExp(`\\n\\n${humanLabel}\\s*PlainPrompt:`, 'g'), '\n\nPlainPrompt:');
-    }
+    // 第2次合并
+    content = xmlHyperMerge(content, roleFeatures, mergeDisable);
 
-    // 第三次正则替换
-    content = xmlPlot_regex(content, 3, regexLog);
+    // 第3轮正则 (order=3)
+    [content, regexLogs] = xmlHyperRegex(content, 3, regexLogs);
 
-    // 清理和格式化
-    content = content
-        // 移除剩余 <regex ...> 包裹
-        .replace(/<regex( +order *= *\d)?>.*?<\/regex>/gm, '')
-        // 统一换行
-        .replace(/\r\n|\r/gm, '\n')
-        // <|curtail|> 替换为换行
-        .replace(/\s*<\|curtail\|>\s*/g, '\n')
-        // <|join|> 去掉
-        .replace(/\s*<\|join\|>\s*/g, '')
-        // <|space|> 替换为" "
-        .replace(/\s*<\|space\|>\s*/g, ' ')
-        // 修正多余的空格/换行
-        .replace(new RegExp(`\\s*\\n\\n(${humanLabel}|${assistantLabel})\\s+`, 'g'), '\n\n$1 ')
-        // 对 <|xxx|> 做 JSON.parse 反序列化
-        .replace(/<\|(\\.*?)\|>/g, function (m, p1) {
-            try {
-                return JSON.parse(`"${p1.replace(/\\?"/g, '\\"')}"`);
-            } catch {
-                return m;
-            }
-        })
-        // 最后去掉多余
-        .replace(/\s*<\|(?!padtxt).*?\|>\s*/g, '\n\n')
-        .trim()
-        .replace(/(?<=\n)\n(?=\n)/g, '');
+    // 插入对 <|padtxtX|> 的处理 or countTokens, etc.
 
-    return content;
+    // 收尾清理
+    content = finalizeCleanup(content);
+
+    return content.trim();
 }
 
 /**
- * 解析 <regex>"/pattern/flags":"replacement"</regex> 标签并执行替换
- * @param {string} content
- * @param {number} order
- * @param {string} regexLog
- * @returns {string} 替换后的文本
+ * xmlHyperRegex:
+ *   匹配 <regex order=?> " /pattern/flags ":" replacement" </regex> 并完成替换
  */
-function xmlPlot_regex(content, order, regexLog) {
-    // 只匹配与当前 order 相符的 <regex> 标签
+function xmlHyperRegex(original, order, logs) {
+    let content = original;
+    // 仅处理同 order 的 block
     const patternRegex = new RegExp(
         `<regex(?: +order *= *(${order}))?>\\s*"\\/([^"]*?)\\/([gimsyu]*)"\\s*:\\s*"(.*?)"\\s*<\\/regex>`,
         'gm'
@@ -407,75 +268,161 @@ function xmlPlot_regex(content, order, regexLog) {
 
     let match;
     while ((match = patternRegex.exec(content)) !== null) {
-        // match[0] : <regex>...</regex>
-        // match[1] : order
-        // match[2] : pattern
-        // match[3] : flags
-        // match[4] : replacement
-
-        const fullBlock = match[0];
-        const subPattern = match[2];
-        const subFlags = match[3];
+        const entire = match[0];
+        const rawPattern = match[2];
+        const rawFlags = match[3];
         let replacement = match[4];
 
-        regexLog += fullBlock + '\n';
-
+        logs += `${entire}\n`;
         try {
-            // 构造 JS 正则
-            const regObj = new RegExp(subPattern, subFlags);
-            // 反序列化 replacement
-            replacement = JSON.parse(`"${replacement.replace(/\\?"/g, '\\"')}"`);
-            // 执行替换
+            const regObj = new RegExp(rawPattern, rawFlags);
+            replacement = JSON.parse(`"${replacement.replace(/\\?"/g, '\\"')}"`); // 反序列化
             content = content.replace(regObj, replacement);
         } catch (err) {
-            console.log(`Regex error: ` + fullBlock + '\n' + err);
+            console.warn(`Regex parse/replace error in block: ${entire}\n`, err);
         }
     }
+    return [content, logs];
+}
+
+/**
+ * content = content.replace(...)
+ * 而后 system: => user:
+ * 根据 roleFeatures.systemRole / userRole 动态替换
+ */
+function preSystemToUserFallback(content, roleFeatures, mergeDisable) {
+    if (mergeDisable.all || mergeDisable.system || mergeDisable.user) {
+        return content; // 不做任何替换
+    }
+
+    const systemName = stripPrefix(roleFeatures.systemRole, roleFeatures.prefix);
+    const userName = stripPrefix(roleFeatures.userRole, roleFeatures.prefix);
+    const assistantName = stripPrefix(roleFeatures.assistantRole, roleFeatures.prefix);
+
+    // 前面非 user|assistant 段落时的 system: -> 去掉
+    const re1 = new RegExp(
+        `(\\n\\n|^\\s*)(?<!\\n\\n(${userName}|${assistantName}):.*?)${systemName}:\\s*`,
+        'gs'
+    );
+    content = content.replace(re1, '$1');
+
+    // 补充 system => user
+    const re2 = new RegExp(`(\\n\\n|^\\s*)${systemName}:\\s*`, 'g');
+    content = content.replace(re2, `\n\n${userName}: `);
+
     return content;
 }
 
 /**
- * 多段 "Human:..." 或 "Assistant:..." 合并
- * @param {string} content
- * @param {*} mergeTag { all, system, human, assistant }
- * @param {*} roleFeatures
- * @returns {string}
+ * xmlHyperMerge:
+ *   利用“段落合并”逻辑，动态 roleFeatures
  */
-function xmlPlot_merge(content, mergeTag, roleFeatures) {
-    const escapeRegExp = (str) => str.replace(/[\b.*+?^${}()|[\]\\]/g, '\\$&');
+function xmlHyperMerge(original, roleFeatures, mergeDisable) {
+    let content = original;
+    if (mergeDisable.all) {
+        return content; // 禁用合并
+    }
+    // 先获取名称
+    const sys = stripPrefix(roleFeatures.systemRole, roleFeatures.prefix);
+    const usr = stripPrefix(roleFeatures.userRole, roleFeatures.prefix);
+    const ast = stripPrefix(roleFeatures.assistantRole, roleFeatures.prefix);
 
-    const humanLabelRaw = `${roleFeatures.userRole}:`;
-    const assistantLabelRaw = `${roleFeatures.assistantRole}:`;
-    const humanLabel = escapeRegExp(humanLabelRaw);
-    const assistantLabel = escapeRegExp(assistantLabelRaw);
-
-    // 如果出现 xmlPlot:
-    if (/(\n\n|^\s*)xmlPlot:\s*/.test(content)) {
-        content = content.replace(
-            /(\n\n|^\s*)xmlPlot:\s*/g,
-            mergeTag.system && mergeTag.human && mergeTag.all
-                ? `\n\n${humanLabelRaw} `
-                : '$1'
-        );
+    // 合并 system 段
+    if (!mergeDisable.system) {
+        const regSys = new RegExp(`(?:\\n\\n|^\\s*)${escapeRegExp(sys)}:\\s*(.*?)(?=\\n\\n(?:${escapeRegExp(usr)}|${escapeRegExp(ast)}|$))`, 'gs');
+        content = content.replace(regSys, (_m, p1) => `\n\n${sys}: ${p1}`);
     }
 
-    // 合并 Human 段
-    if (mergeTag.all && mergeTag.human) {
-        const humanRegex = new RegExp(`(?:\\n\\n|^\\s*)${humanLabel}(.*?)(?=\\n\\n(?:${assistantLabel}|$))`, 'gs');
-        content = content.replace(humanRegex, (match, p1) => {
-            const innerHumanLabelRegex = new RegExp(`\\n\\n${humanLabel}\\s*`, 'g');
-            return `\n\n${humanLabelRaw}` + p1.replace(innerHumanLabelRegex, '\n\n');
-        });
+    // 合并 user 段
+    if (!mergeDisable.user) {
+        const regUsr = new RegExp(`(?:\\n\\n|^\\s*)${escapeRegExp(usr)}:\\s*(.*?)(?=\\n\\n(?:${escapeRegExp(ast)}|${escapeRegExp(sys)}|$))`, 'gs');
+        content = content.replace(regUsr, (_m, p1) => `\n\n${usr}: ${p1}`);
     }
 
-    // 合并 Assistant 段
-    if (mergeTag.all && mergeTag.assistant) {
-        const assistantRegex = new RegExp(`(?:\\n\\n|^\\s*)${assistantLabel}(.*?)(?=\\n\\n(?:${humanLabel}|$))`, 'gs');
-        content = content.replace(assistantRegex, (match, p1) => {
-            const innerAssistantLabelRegex = new RegExp(`\\n\\n${assistantLabel}\\s*`, 'g');
-            return `\n\n${assistantLabelRaw}` + p1.replace(innerAssistantLabelRegex, '\n\n');
-        });
+    // 合并 assistant 段
+    if (!mergeDisable.assistant) {
+        const regAst = new RegExp(`(?:\\n\\n|^\\s*)${escapeRegExp(ast)}:\\s*(.*?)(?=\\n\\n(?:${escapeRegExp(usr)}|${escapeRegExp(sys)}|$))`, 'gs');
+        content = content.replace(regAst, (_m, p1) => `\n\n${ast}: ${p1}`);
     }
 
     return content;
+}
+
+/**
+ * 先 splitContent = content.split(regExp)
+ * 然后 for each <@N> => 把里面内容插入到 “倒数第N段落”后面
+ * 删除 match[0]
+ */
+function handleSubInsertion(original) {
+    let content = original;
+
+    // 按  \n\n(?=.*?:) 拆分
+    let splitted = content.split(/\n\n(?=.*?:)/g);
+
+    let match;
+    while ((match = /<@(\d+)>(.*?)<\/@\1>/gs.exec(content)) !== null) {
+        const idx = splitted.length - parseInt(match[1], 10) - 1;
+        if (idx >= 0 && splitted[idx]) {
+            splitted[idx] += `\n\n${match[2]}`;
+        }
+        content = content.replace(match[0], '');
+    }
+
+    // 重组
+    content = splitted.join('\n\n').replace(/<@(\d+)>.*?<\/@\1>/gs, '');
+    return content;
+}
+
+/**
+ * 移除 <regex> 块、统一换行、<|curtail|> => 换行，<|join|> => 空
+ * <|space|> => ' '，以及 <|xxx|> => JSON.parse
+ * 然后去除多余空行
+ */
+function finalizeCleanup(original) {
+    let content = original;
+    // 移除 <regex> 块
+    content = content.replace(/<regex( +order *= *\d)?>.*?<\/regex>/gm, '');
+
+    // 统一换行
+    content = content.replace(/\r\n|\r/gm, '\n');
+
+    // <|curtail|> => 换行
+    content = content.replace(/\s*<\|curtail\|>\s*/g, '\n');
+
+    // <|join|> => ''
+    content = content.replace(/\s*<\|join\|>\s*/g, '');
+
+    // <|space|> => ' '
+    content = content.replace(/\s*<\|space\|>\s*/g, ' ');
+
+    // JSON反序列化
+    content = content.replace(/<\|(\\.*?)\|>/g, (m, p1) => {
+        try {
+            return JSON.parse(`"${p1.replace(/\\?"/g, '\\"')}"`);
+        } catch {
+            return m; // 保留原文本
+        }
+    });
+
+    // 移除其他 <|xxx|> 标记
+    content = content.replace(/\s*<\|(?!padtxt).*?\|>\s*/g, '\n\n');
+
+    // 去除多余空行
+    content = content.trim().replace(/(?<=\n)\n(?=\n)/g, '');
+
+    return content;
+}
+
+/** stripPrefix: 如果 role 中含有前缀(如 \u0008)，去掉 */
+function stripPrefix(fullStr, prefix) {
+    if (!prefix) return fullStr;
+    if (fullStr.startsWith(prefix)) {
+        return fullStr.slice(prefix.length);
+    }
+    return fullStr;
+}
+
+/** 转义正则特殊字符 */
+function escapeRegExp(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

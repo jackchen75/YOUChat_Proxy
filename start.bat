@@ -21,6 +21,9 @@ set SESSION_LOCK_TIMEOUT=180
 REM �����Ƿ����ò�������
 set ENABLE_DETECTION=true
 
+REM �����Ƿ������Զ�Cookie���� (USE_MANUAL_LOGIN=falseʱ��Ч)
+set ENABLE_AUTO_COOKIE_UPDATE=false
+
 REM �Ƿ������˻���֤ (����ʱ��`ALLOW_NON_PRO`������Ч���������˺��������)
 set SKIP_ACCOUNT_VALIDATION=false
 
@@ -88,7 +91,7 @@ REM ����α����role (������ã�����ʹ��t
 set USE_BACKSPACE_PREFIX=false
 
 REM �����ϴ��ļ���ʽ (docx �� txt) gpt_4o ʹ��txt���ܸ�������
-set UPLOAD_FILE_FORMAT=docx
+set UPLOAD_FILE_FORMAT=txt
 
 REM �����Ƿ����� CLEWD ����
 set CLEWD_ENABLED=false

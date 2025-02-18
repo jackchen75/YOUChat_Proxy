@@ -63,6 +63,10 @@ class SessionManager {
 
             // 记录请求次数
             session.youTotalRequests = 0;
+            // 权重
+            if (typeof session.weight !== 'number') {
+                session.weight = 1;
+            }
         }
     }
 
@@ -84,7 +88,7 @@ class SessionManager {
                     const timestamp = parseInt(parts[0], 10);
                     const name = parts[1];
                     if (!isNaN(timestamp) && name) {
-                        arr.push({ time: timestamp, username: name });
+                        arr.push({time: timestamp, username: name});
                     }
                 }
             }
@@ -122,7 +126,7 @@ class SessionManager {
         const now = Date.now();
         const already = this.cooldownList.find(x => x.username === username);
         if (!already) {
-            this.cooldownList.push({ time: now, username });
+            this.cooldownList.push({time: now, username});
             this.saveCooldownList();
             console.log(`写入冷却列表：${new Date(now).toLocaleString()} | ${username}`);
         }
@@ -198,7 +202,7 @@ class SessionManager {
                     return browserInstance;
                 }
             }
-            throw new Error('当前负载已饱和，请稍后再试');
+            throw new Error('当前负载已饱和，请稍后再试(以达到最大并发)');
         });
     }
 
@@ -214,86 +218,116 @@ class SessionManager {
     async getAvailableSessions() {
         const allSessionsLocked = this.usernameList.every(username => this.sessions[username].locked);
         if (allSessionsLocked) {
-            throw new Error('所有会话处于饱和状态，请稍后再试');
+            throw new Error('所有会话处于饱和状态，请稍后再试(无可用账号)');
         }
 
-        // 轮询
-        const totalSessions = this.usernameList.length;
-        for (let i = 0; i < totalSessions; i++) {
-            const index = (this.currentIndex + i) % totalSessions;
-            const username = this.usernameList[index];
+        // 收集所有valid && !locked && (不在冷却期)
+        let candidates = [];
+        for (const username of this.usernameList) {
             const session = this.sessions[username];
-
             // 如果没被锁 并且 session.valid
             if (session.valid && !session.locked) {
                 if (this.provider.enableRequestLimit && this.isInCooldown(username)) {
                     // console.log(`账号 ${username} 处于 24 小时冷却中，跳过`);
                     continue;
                 }
-
-                const result = await session.mutex.runExclusive(async () => {
-                    // 再次检查锁定状态
-                    if (session.locked) {
-                        return null;
-                    }
-                    // 检查模式状态
-                    if (session.modeStatus && session.modeStatus[session.currentMode]) {
-                        session.locked = true;
-                        session.requestCount++;
-                        this.currentIndex = (index + 1) % totalSessions;
-
-                        // 获取可用浏览器实例
-                        const browserInstance = await this.getAvailableBrowser();
-
-                        // 启动计时器
-                        if (SESSION_LOCK_TIMEOUT > 0) {
-                            this.startAutoUnlockTimer(username, browserInstance.id);
-                        }
-
-                        return {
-                            selectedUsername: username,
-                            modeSwitched: false,
-                            browserInstance: browserInstance
-                        };
-                    } else if (
-                        this.isCustomModeEnabled &&
-                        this.isRotationEnabled &&
-                        this.provider &&
-                        typeof this.provider.switchMode === 'function'
-                    ) {
-                        console.warn(`尝试为账号 ${username} 切换模式...`);
-                        this.provider.switchMode(session);
-                        session.rotationEnabled = false;
-
-                        if (session.modeStatus && session.modeStatus[session.currentMode]) {
-                            session.locked = true;
-                            session.requestCount++;
-                            this.currentIndex = (index + 1) % totalSessions;
-
-                            // 获取可用浏览器实例
-                            const browserInstance = await this.getAvailableBrowser();
-
-                            if (SESSION_LOCK_TIMEOUT > 0) {
-                                this.startAutoUnlockTimer(username, browserInstance.id);
-                            }
-
-                            return {
-                                selectedUsername: username,
-                                modeSwitched: true,
-                                browserInstance: browserInstance
-                            };
-                        }
-                    }
-                    return null;
-                });
-
-                if (result) {
-                    // 成功锁定会话，返回
-                    return result;
-                }
+                candidates.push(username);
             }
         }
-        throw new Error('没有可用的会话');
+
+        if (candidates.length === 0) {
+            throw new Error('没有可用的会话');
+        }
+
+        // 随机洗牌
+        shuffleArray(candidates);
+
+        // 加权抽签
+        let weightSum = 0;
+        for (const uname of candidates) {
+            weightSum += this.sessions[uname].weight;
+        }
+
+        // 生成随机
+        const randValue = Math.floor(Math.random() * weightSum) + 1;
+
+        // 遍历并扣减
+        let cumulative = 0;
+        let selectedUsername = null;
+        for (const uname of candidates) {
+            cumulative += this.sessions[uname].weight;
+            if (randValue <= cumulative) {
+                selectedUsername = uname;
+                break;
+            }
+        }
+
+        if (!selectedUsername) {
+            selectedUsername = candidates[0];
+        }
+
+        const selectedSession = this.sessions[selectedUsername];
+
+        // 再尝试锁定账号
+        const result = await selectedSession.mutex.runExclusive(async () => {
+            if (selectedSession.locked) {
+                return null;
+            }
+
+            // 判断是否可用
+            if (selectedSession.modeStatus && selectedSession.modeStatus[selectedSession.currentMode]) {
+                // 锁定
+                selectedSession.locked = true;
+                selectedSession.requestCount++;
+
+                // 获取可用浏览器
+                const browserInstance = await this.getAvailableBrowser();
+
+                // 启动自动解锁计时器
+                if (SESSION_LOCK_TIMEOUT > 0) {
+                    this.startAutoUnlockTimer(selectedUsername, browserInstance.id);
+                }
+
+                return {
+                    selectedUsername,
+                    modeSwitched: false,
+                    browserInstance
+                };
+            } else if (
+                this.isCustomModeEnabled &&
+                this.isRotationEnabled &&
+                this.provider &&
+                typeof this.provider.switchMode === 'function'
+            ) {
+                console.warn(`尝试为账号 ${selectedUsername} 切换模式...`);
+                this.provider.switchMode(selectedSession);
+                selectedSession.rotationEnabled = false;
+
+                if (selectedSession.modeStatus && selectedSession.modeStatus[selectedSession.currentMode]) {
+                    selectedSession.locked = true;
+                    selectedSession.requestCount++;
+                    const browserInstance = await this.getAvailableBrowser();
+
+                    if (SESSION_LOCK_TIMEOUT > 0) {
+                        this.startAutoUnlockTimer(selectedUsername, browserInstance.id);
+                    }
+
+                    return {
+                        selectedUsername,
+                        modeSwitched: true,
+                        browserInstance
+                    };
+                }
+            }
+
+            return null;
+        });
+
+        if (result) {
+            return result;
+        } else {
+            throw new Error('会话刚被占用或模式不可用!');
+        }
     }
 
     startAutoUnlockTimer(username, browserId) {
@@ -347,6 +381,16 @@ class SessionManager {
             return await this.getAvailableSessions();
         }
         throw new Error(`未实现的策略: ${strategy}`);
+    }
+}
+
+/**
+ * Fisher–Yates 洗牌
+ */
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
 }
 
