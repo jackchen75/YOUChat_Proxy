@@ -24,6 +24,8 @@ const availableModels = [
     "gpt_4o",
     "gpt_4_turbo",
     "gpt_4",
+    "claude_3_7_sonnet_extended",
+    "claude_3_7_sonnet",
     "claude_3_5_sonnet",
     "claude_3_opus",
     "claude_3_sonnet",
@@ -33,6 +35,7 @@ const availableModels = [
     "gemini_pro",
     "gemini_1_5_pro",
     "gemini_1_5_flash",
+    "gemini_2_flash",
     "databricks_dbrx_instruct",
     "command_r",
     "command_r_plus",
@@ -44,6 +47,7 @@ const availableModels = [
     "deepseek_v3"
 ];
 const modelMappping = {
+    "claude-3-7-sonnet-20250219": "claude_3_7_sonnet",
     "claude-3-5-sonnet-latest": "claude_3_5_sonnet",
     "claude-3-5-sonnet-20241022": "claude_3_5_sonnet",
     "claude-3-5-sonnet-20240620": "claude_3_5_sonnet",
