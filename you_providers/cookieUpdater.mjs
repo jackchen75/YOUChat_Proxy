@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 const CONFIG_FILE_PATH = path.join(__dirname, "../config.mjs");
 
 // 仅在 USE_MANUAL_LOGIN 为 false 且 ENABLE_AUTO_COOKIE_UPDATE 为 true 时生效
-const ENABLE_AUTO_COOKIE_UPDATE = process.env.ENABLE_AUTO_COOKIE_UPDATE === "true";
+const ENABLE_AUTO_COOKIE_UPDATE = process.env.ENABLE_AUTO_COOKIE_UPDATE !== "false";
 
 function unifyQuotesForJSON(str) {
     // 正则匹配 `` `...` ``
