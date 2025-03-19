@@ -1,7 +1,27 @@
 import YouProvider from './you_providers/youProvider.mjs';
 import PerplexityProvider from './perplexity_providers/perplexityProvider.mjs';
 import HappyApiProvider from './happyapi_providers/happyApi.mjs';
-import {config as youConfig} from './xconfig.mjs';
+import fs from 'fs';
+import path from 'path';
+
+// 动态导入配置文件
+let youConfig;
+try {
+    // 尝试复制 config.mjs 到 xconfig.mjs (Docker环境下)
+    if (fs.existsSync('/app/config.mjs') && !fs.existsSync('/app/xconfig.mjs')) {
+        const configContent = fs.readFileSync('/app/config.mjs', 'utf8');
+        fs.writeFileSync('/app/xconfig.mjs', configContent, 'utf8');
+        console.log('已复制 /app/config.mjs 到 /app/xconfig.mjs');
+    }
+    
+    // 导入配置
+    const { config } = await import('./xconfig.mjs');
+    youConfig = config;
+} catch (e) {
+    console.error('加载 xconfig.mjs 失败:', e);
+    process.exit(1);
+}
+
 import {config as perplexityConfig} from './perplexityConfig.mjs';
 
 class ProviderManager {
