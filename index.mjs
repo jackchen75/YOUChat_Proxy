@@ -1,3 +1,15 @@
+// 首先复制 config.mjs 到 xconfig.mjs
+import fs from 'fs';
+try {
+    if (fs.existsSync("./config.mjs")) {
+        const configContent = fs.readFileSync("./config.mjs", "utf8");
+        fs.writeFileSync("./xconfig.mjs", configContent, "utf8");
+        console.log("已复制 config.mjs 到 xconfig.mjs");
+    }
+} catch (copyError) {
+    console.warn("复制 config.mjs 到 xconfig.mjs 失败:", copyError);
+}
+
 import express from "express";
 import {createEvent, getGitRevision} from "./utils/cookieUtils.mjs";
 import YouProvider from "./provider.mjs";
@@ -10,7 +22,6 @@ import fetch from 'node-fetch';
 import path from 'path';
 import geoip from 'geoip-lite';
 import RequestLogger from './requestLogger.mjs';
-import fs from 'fs';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -67,17 +78,6 @@ const modelMappping = {
 // import config.mjs
 let config;
 try {
-    // 先尝试复制 config.mjs 到 xconfig.mjs
-    try {
-        if (fs.existsSync("./config.mjs")) {
-            const configContent = fs.readFileSync("./config.mjs", "utf8");
-            fs.writeFileSync("./xconfig.mjs", configContent, "utf8");
-            console.log("已复制 config.mjs 到 xconfig.mjs");
-        }
-    } catch (copyError) {
-        console.warn("复制 config.mjs 到 xconfig.mjs 失败:", copyError);
-    }
-    
     const configModule = await import("./xconfig.mjs");
     config = configModule.config;
 } catch (e) {
