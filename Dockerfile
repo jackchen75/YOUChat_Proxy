@@ -1,5 +1,5 @@
 # Use the base image that contains all dependencies
-FROM youchat-proxy-base-v2:original
+FROM yunzaixi4/youchat-proxy-base-v2:original
 
 # Switch to root for permissions
 USER root
