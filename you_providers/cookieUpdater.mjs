@@ -7,7 +7,7 @@ const configMutex = new Mutex(); // 互斥锁
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CONFIG_FILE_PATH = path.join(__dirname, "../config.mjs");
+const CONFIG_FILE_PATH = path.join(__dirname, "../xconfig.mjs");
 
 // 仅在 USE_MANUAL_LOGIN 为 false 且 ENABLE_AUTO_COOKIE_UPDATE 为 true 时生效
 const ENABLE_AUTO_COOKIE_UPDATE = process.env.ENABLE_AUTO_COOKIE_UPDATE !== "false";
@@ -111,7 +111,7 @@ function findSessionByEmail(configObj, email) {
 }
 
 /**
- * config.mjs 中匹配相同 email 的 session，若 DS 或 DSR 有变化，则更新整个 cookie
+ * xconfig.mjs 中匹配相同 email 的 session，若 DS 或 DSR 有变化，则更新整个 cookie
  * @param {import('puppeteer-core').Page} page
  */
 export async function updateLocalConfigCookieByEmail(page) {
@@ -156,7 +156,7 @@ export async function updateLocalConfigCookieByEmail(page) {
     await configMutex.runExclusive(async () => {
         try {
             if (!fs.existsSync(CONFIG_FILE_PATH)) {
-                console.warn(`找不到 config.mjs: ${CONFIG_FILE_PATH}`);
+                console.warn(`找不到 xconfig.mjs: ${CONFIG_FILE_PATH}`);
                 return;
             }
             const raw = fs.readFileSync(CONFIG_FILE_PATH, "utf8");
@@ -169,7 +169,7 @@ export async function updateLocalConfigCookieByEmail(page) {
 
             const found = findSessionByEmail(configObj, newEmail);
             if (!found) {
-                console.log(`未能在 config 中找到 email=${newEmail} 的 session，跳过更新。`);
+                console.log(`未能在 xconfig 中找到 email=${newEmail} 的 session，跳过更新。`);
                 return;
             }
 

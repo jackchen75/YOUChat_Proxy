@@ -10,6 +10,7 @@ import fetch from 'node-fetch';
 import path from 'path';
 import geoip from 'geoip-lite';
 import RequestLogger from './requestLogger.mjs';
+import fs from 'fs';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -66,11 +67,22 @@ const modelMappping = {
 // import config.mjs
 let config;
 try {
-    const configModule = await import("./config.mjs");
+    // 先尝试复制 config.mjs 到 xconfig.mjs
+    try {
+        if (fs.existsSync("./config.mjs")) {
+            const configContent = fs.readFileSync("./config.mjs", "utf8");
+            fs.writeFileSync("./xconfig.mjs", configContent, "utf8");
+            console.log("已复制 config.mjs 到 xconfig.mjs");
+        }
+    } catch (copyError) {
+        console.warn("复制 config.mjs 到 xconfig.mjs 失败:", copyError);
+    }
+    
+    const configModule = await import("./xconfig.mjs");
     config = configModule.config;
 } catch (e) {
     console.error(e);
-    console.error("config.mjs 不存在或者有错误，请检查");
+    console.error("xconfig.mjs 不存在或者有错误，请检查");
     process.exit(1);
 }
 

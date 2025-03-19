@@ -74,7 +74,7 @@ class YouProvider {
         await this.sessionManager.initBrowserInstancesInBatch();
 
         if (process.env.USE_MANUAL_LOGIN === "true") {
-            console.log("当前使用手动登录模式，跳过config.mjs文件中的 cookie 验证");
+            console.log("当前使用手动登录模式，跳过xconfig.mjs文件中的 cookie 验证");
             // 获取一个浏览器实例
             const browserInstance = this.sessionManager.browserInstances[0];
             const page = browserInstance.page;
@@ -882,7 +882,7 @@ class YouProvider {
             if (!this.config.user_chat_mode_id[username]) {
                 // 为当前用户创建新记录
                 this.config.user_chat_mode_id[username] = {};
-                fs.writeFileSync("./config.mjs", "export const config = " + JSON.stringify(this.config, null, 4));
+                fs.writeFileSync("./xconfig.mjs", "export const config = " + JSON.stringify(this.config, null, 4));
                 console.log(`Created new record for user: ${username}`);
             }
 
@@ -916,7 +916,7 @@ class YouProvider {
                 if (userChatMode.chat_mode_id) {
                     this.config.user_chat_mode_id[username][proxyModel] = userChatMode.chat_mode_id;
                     // 写回 config
-                    fs.writeFileSync("./config.mjs", "export const config = " + JSON.stringify(this.config, null, 4));
+                    fs.writeFileSync("./xconfig.mjs", "export const config = " + JSON.stringify(this.config, null, 4));
                     console.log(`Created new chat mode for user ${username} and model ${proxyModel}`);
                 } else {
                     if (userChatMode.error) console.log(userChatMode.error);
@@ -1751,7 +1751,7 @@ async function markAccountAsInvalid(username, config) {
     }
     config.invalid_accounts[username] = "已失效";
     try {
-        fs.writeFileSync("./config.mjs", `export const config = ${JSON.stringify(config, null, 4)}`);
+        fs.writeFileSync("./xconfig.mjs", `export const config = ${JSON.stringify(config, null, 4)}`);
     } catch (error) {
         console.error(`保存失效账号信息失败:`, error);
     }
