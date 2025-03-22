@@ -24,7 +24,7 @@ class YouProvider {
         this.sessions = {};
         this.isCustomModeEnabled = process.env.USE_CUSTOM_MODE === "true"; // 是否启用自定义模式
         this.isRotationEnabled = process.env.ENABLE_MODE_ROTATION === "true"; // 是否启用模式轮换
-        this.uploadFileFormat = process.env.UPLOAD_FORMAT || ''; // 上传文件格式
+        this.uploadFileFormat = process.env.UPLOAD_FORMAT || 'txt'; // 上传文件格式
         this.enableRequestLimit = process.env.ENABLE_REQUEST_LIMIT === 'true'; // 是否启用请求次数限制
         this.requestLimit = parseInt(process.env.REQUEST_LIMIT, 10) || 3; // 请求次数上限
         this.networkMonitor = new NetworkMonitor();
